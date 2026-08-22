@@ -18,9 +18,6 @@ Option Explicit
 ' ============================================================
 
 
-Private Const ABA_DADOS As String = "DADOS"
-Private Const ABA_PLANEJAMENTO As String = "PLANEJAMENTO"
-
 Private Const PREFIXO_CARD As String = "APS_CARD_"
 
 Private Const LINHA_HORAS As Long = 4

@@ -486,6 +486,7 @@ End Function
 Public Sub AtualizarCardsAtraso()
 
     Dim ws As Worksheet
+    Dim wsDados As Worksheet
     Dim i As Long
 
     Dim shp As Shape
@@ -496,6 +497,9 @@ Public Sub AtualizarCardsAtraso()
     Set ws = _
         ThisWorkbook.Worksheets( _
             "PLANEJAMENTO")
+
+    Set wsDados = _
+        ThisWorkbook.Worksheets("DADOS")
 
     For i = ws.Shapes.Count To 1 Step -1
 
@@ -542,7 +546,21 @@ Public Sub AtualizarCardsAtraso()
 
             If op <> "" Then
 
-                AtualizarCardIndividual op
+                If EncontrarLinhaOPAtraso( _
+                        wsDados, _
+                        op) = 0 Then
+
+                    ws.Shapes(i).Delete
+
+                Else
+
+                    AtualizarCardIndividual op
+
+                End If
+
+            Else
+
+                ws.Shapes(i).Delete
 
             End If
 

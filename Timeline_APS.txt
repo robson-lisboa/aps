@@ -24,9 +24,6 @@ Option Explicit
 ' ============================================================
 
 
-Private Const ABA_PLANEJAMENTO As String = "PLANEJAMENTO"
-Private Const ABA_DADOS As String = "DADOS"
-
 Private Const LINHA_TITULO As Long = 1
 Private Const LINHA_SUBTITULO As Long = 2
 Private Const LINHA_HORAS As Long = 4
@@ -690,7 +687,7 @@ End Sub
 '
 ' ============================================================
 
-Public Function TimelineX( _
+Private Function TimelineX( _
     ByVal horario As Date) As Double
 
     Dim ws As Worksheet
@@ -799,7 +796,7 @@ End Function
 ' CALCULAR LARGURA BASEADA NO TEMPO
 ' ============================================================
 
-Public Function TimelineLargura( _
+Private Function TimelineLargura( _
     ByVal inicio As Date, _
     ByVal fim As Date) As Double
 
@@ -829,7 +826,7 @@ End Function
 ' CALCULAR Y DA MÁQUINA
 ' ============================================================
 
-Public Function TimelineY( _
+Private Function TimelineY( _
     ByVal maquina As String) As Double
 
     Dim ws As Worksheet

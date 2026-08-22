@@ -20,7 +20,6 @@ Option Explicit
 '
 ' ============================================================
 
-Private Const ABA_DADOS As String = "DADOS"
 Private Const ABA_PLAN As String = "PLANEJAMENTO"
 Private Const ABA_RESUMO As String = "RESUMO"
 

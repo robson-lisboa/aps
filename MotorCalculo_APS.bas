@@ -65,6 +65,7 @@ Public Sub ExecutarMotorAPS()
     Dim opsSemMaquina As String
     Dim opsSemVelocidade As String
     Dim opsSemQuantidade As String
+    Dim opsSemComprimidosPorCaixa As String
 
     Dim calculoOK As Boolean
 
@@ -183,7 +184,8 @@ Public Sub ExecutarMotorAPS()
                 linha, _
                 opsSemMaquina, _
                 opsSemVelocidade, _
-                opsSemQuantidade
+                opsSemQuantidade, _
+                opsSemComprimidosPorCaixa
 
         End If
 
@@ -258,6 +260,17 @@ SaidaNormal:
 
     End If
 
+    If opsSemComprimidosPorCaixa <> "" Then
+
+        resumo = _
+            resumo & _
+            vbCrLf & vbCrLf & _
+            "ATENÇÃO - Comprimidos por caixa não cadastrado:" & _
+            vbCrLf & _
+            opsSemComprimidosPorCaixa
+
+    End If
+
     MsgBox _
         resumo, _
         vbInformation, _
@@ -303,7 +316,8 @@ Private Sub CalcularOP( _
     ByVal linha As Long, _
     ByRef opsSemMaquina As String, _
     ByRef opsSemVelocidade As String, _
-    ByRef opsSemQuantidade As String)
+    ByRef opsSemQuantidade As String, _
+    ByRef opsSemComprimidosPorCaixa As String)
 
     Dim op As String
     Dim maquina As String
@@ -480,11 +494,15 @@ CalcularRecursos:
 
             Else
 
-                ' Sem cadastro de comprimidos por caixa.
-                ' Mantém quantidade como caixas para não
-                ' destruir o cálculo.
+                opsSemComprimidosPorCaixa = _
+                    opsSemComprimidosPorCaixa & _
+                    "• " & op & _
+                    " (" & maquina & ")" & _
+                    " - Comprimidos por caixa não cadastrado" & vbCrLf
 
-                caixas = quantidade
+                LimparCalculosOP wsDados, linha
+
+                Exit Sub
 
             End If
 

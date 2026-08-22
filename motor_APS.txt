@@ -1,7 +1,13 @@
 Option Explicit
 
 ' ============================================================
-' MÓDULO 1 — CONFIGURAÇÃO DO APS
+' MÓDULO 1 — CONFIGURAÇÃO DO APS (LEGADO)
+' ============================================================
+'
+' ATENÇÃO: Este módulo é mantido para compatibilidade.
+' O fluxo principal do APS PURAN não utiliza ConfigurarAPS.
+' Use IniciarSistemaAPS ou AtualizarAPS como pontos de entrada.
+'
 ' ============================================================
 
 Public Sub ConfigurarAPS()
@@ -11,14 +17,11 @@ Public Sub ConfigurarAPS()
     CriarAbaSeNaoExistir "RECURSOS"
     CriarAbaSeNaoExistir "DADOS"
     CriarAbaSeNaoExistir "PLANEJAMENTO"
-    CriarAbaSeNaoExistir "CARDS"
     CriarAbaSeNaoExistir "RESUMO"
 
     PrepararRecursos
     PrepararDados
-    PrepararCards
     PrepararPlanejamento
-    PrepararResumo
 
     Application.ScreenUpdating = True
 
@@ -121,37 +124,6 @@ End Sub
 
 
 ' ============================================================
-' ABA CARDS
-' ============================================================
-
-Private Sub PrepararCards()
-
-    Dim ws As Worksheet
-
-    Set ws = ThisWorkbook.Worksheets("CARDS")
-
-    ws.Range("A1:L1").Value = Array( _
-        "Card ID", _
-        "OP", _
-        "Máquina", _
-        "Início", _
-        "Fim", _
-        "Duração_h", _
-        "Posição X", _
-        "Posição Y", _
-        "Largura", _
-        "Altura", _
-        "Tipo", _
-        "Status")
-
-    ws.Rows(1).Font.Bold = True
-
-    ws.Columns("A:L").AutoFit
-
-End Sub
-
-
-' ============================================================
 ' ABA PLANEJAMENTO
 ' ============================================================
 
@@ -160,8 +132,26 @@ Private Sub PrepararPlanejamento()
     Dim ws As Worksheet
     Dim i As Long
     Dim hora As Date
+    Dim resposta As VbMsgBoxResult
 
     Set ws = ThisWorkbook.Worksheets("PLANEJAMENTO")
+
+    If Trim$(CStr(ws.Range("A1").Value)) <> "" Then
+
+        resposta = MsgBox( _
+            "A aba PLANEJAMENTO já possui conteúdo." & _
+            vbCrLf & vbCrLf & _
+            "Deseja reconfigurar a aba? Todos os dados atuais serão perdidos.", _
+            vbYesNo + vbExclamation, _
+            "Configurar APS")
+
+        If resposta <> vbYes Then
+
+            Exit Sub
+
+        End If
+
+    End If
 
     ws.Cells.Clear
 
@@ -199,36 +189,9 @@ Private Sub PrepararPlanejamento()
     Next i
 
     ws.Rows("5:8").RowHeight = 60
-
 End Sub
 
 
 ' ============================================================
-' ABA RESUMO
+' FIM DO MÓDULO 1
 ' ============================================================
-
-Private Sub PrepararResumo()
-
-    Dim ws As Worksheet
-
-    Set ws = ThisWorkbook.Worksheets("RESUMO")
-
-    ws.Range("A1").Value = _
-        "APS — RESUMO DA PRODUÇÃO"
-
-    ws.Range("A1").Font.Bold = True
-    ws.Range("A1").Font.Size = 16
-
-    ws.Range("A4").Value = "TOTAL DE OPs"
-    ws.Range("D4").Value = "CONCLUÍDAS"
-    ws.Range("G4").Value = "EM PRODUÇÃO"
-    ws.Range("J4").Value = "ATRASADAS"
-
-    ws.Range("A9").Value = "TOTAL DE CAIXAS"
-    ws.Range("D9").Value = "HORAS PLANEJADAS"
-    ws.Range("G9").Value = "HORAS DE ATRASO"
-    ws.Range("J9").Value = "OPs COM ATRASO"
-
-    ws.Columns("A:L").ColumnWidth = 14
-
-End Sub

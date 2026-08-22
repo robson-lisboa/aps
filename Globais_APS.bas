@@ -32,8 +32,6 @@ Public Const PREFIXO_CARD As String = "APS_CARD_"
 '
 ' ============================================================
 
-Public Const ALT_IDX_TIPO As Long = 0
-Public Const ALT_IDX_CATEGORIA As Long = 1
 Public Const ALT_IDX_OP As Long = 2
 Public Const ALT_IDX_MAQUINA As Long = 3
 
@@ -45,12 +43,6 @@ Public Const STATUS_PLANEJADO As String = "PLANEJADO"
 Public Const STATUS_EM_PRODUCAO As String = "EM PRODUÇÃO"
 Public Const STATUS_ATRASADO As String = "ATRASADO"
 Public Const STATUS_CONCLUIDO As String = "CONCLUÍDO"
-
-' ============================================================
-' ERROS DO APS
-' ============================================================
-
-Public Const ERRO_APS_BASE As Long = 500
 
 ' ============================================================
 ' FIM DO MÓDULO

@@ -39,7 +39,6 @@ Option Explicit
 
 
 Public Const ABA_EVENTOS As String = "EVENTOS"
-Public Const TABELA_EVENTOS As String = "tbEventos"
 
 
 ' ============================================================
@@ -1021,7 +1020,7 @@ End Sub
 
 Private Sub AtualizarCardsDepoisEventosAPS()
 
-    On Error Resume Next
+    On Error GoTo TrataErro
 
     ' --------------------------------------------------------
     ' O Módulo 6 reconstrói todos os cards.
@@ -1032,7 +1031,20 @@ Private Sub AtualizarCardsDepoisEventosAPS()
 
     CriarCardsAPS
 
-    On Error GoTo 0
+    Exit Sub
+
+TrataErro:
+
+    MsgBox _
+        "Erro ao atualizar cards após eventos:" & _
+        vbCrLf & vbCrLf & _
+        "Procedimento: " & Err.Source & _
+        vbCrLf & _
+        "Erro: " & CStr(Err.Number) & _
+        vbCrLf & _
+        "Descrição: " & Err.Description, _
+        vbCritical, _
+        "APS - Eventos"
 
 End Sub
 

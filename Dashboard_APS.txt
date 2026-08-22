@@ -192,7 +192,13 @@ Private Sub LimparDashboard( _
     Dim i As Long
 
 
-    ws.Cells.Clear
+    ws.Range("A1:O13").ClearContents
+
+
+    ws.Range("A16:C1000").ClearContents
+
+
+    ws.Range("E16:F100").ClearContents
 
 
     For i = ws.Shapes.Count To 1 Step -1

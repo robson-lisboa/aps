@@ -34,10 +34,6 @@ Private Const LINHA_MAQUINA As Long = 5
 Private Const ALTURA_REFEICAO As Double = 18
 Private Const LARGURA_MINIMA_REFEICAO As Double = 30
 
-' Nome local para evitar conflito caso outro módulo
-' já possua uma constante ABA_DADOS.
-Private Const ABA_DADOS_REFEICAO As String = "DADOS"
-
 
 ' ============================================================
 ' CRIAR ESTRUTURA DA ABA REFEIÇÃO

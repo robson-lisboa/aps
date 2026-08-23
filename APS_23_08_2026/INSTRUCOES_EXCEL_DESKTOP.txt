@@ -1,0 +1,153 @@
+============================================================
+INSTRUCOES PARA EXCEL DESKTOP
+APS PURAN - Versao 2.0
+============================================================
+
+1. ABRIR A PLANILHA
+-------------------
+- Faca download do arquivo APS_PURAN_FINAL.xlsx
+- Abra no Excel Desktop (Windows)
+- Habilite as macros quando solicitado
+- Habilite o VBA quando solicitado
+
+2. IMPORTAR MODULOS VBA
+-----------------------
+- Pressione Alt+F11 para abrir o VBA Editor
+- No menu: Arquivo > Importar arquivo
+- Importe os arquivos .bas NA SEGUINTE ORDEM:
+
+  Ordem  Arquivo
+  -----  -------------------------
+  1      Globais_APS.bas
+  2      motor_APS.bas
+  3      MotorCalculo_APS.bas
+  4      Atrasos_APS.bas
+  5      Eventos_APS.bas
+  6      Refeicao_fixa_.bas
+  7      Cards_APS.bas
+  8      Timeline_APS.bas
+  9      Dashboard_APS.bas
+  10     DragCards_APS.bas
+  11     Integracao_APS.bas
+  12     Final_APS.bas
+  13     Navegacao_APS.bas
+  14     Interface_APS.bas
+  15     Teste_Fase3.bas
+  16     CadastroOP_APS.bas
+  17     CadastroMaquina_APS.bas
+
+3. COMPILAR O PROJETO
+---------------------
+- No VBA Editor: Debug > Compile
+- Se aparecerem erros, verifique se todos os modulos
+  foram importados na ordem correta
+
+4. SALVAR COMO .XLSM
+--------------------
+- Feche o VBA Editor
+- No Excel: Arquivo > Salvar Como
+- Em "Tipo", selecione:
+  "Pasta de trabalho habilitada para macro do Excel (*.xlsm)"
+- Salve como APS_PURAN.xlsm
+- Feche o arquivo
+
+5. EXECUTAR O SISTEMA
+---------------------
+- Abra APS_PURAN.xlsm
+- Habilite as macros
+- O sistema abrira na tela INICIO
+- Para inicializar os componentes:
+  Pressione Alt+F11
+  Pressione Ctrl+G (janela Imediata)
+  Digite: InicializarAPS
+  Pressione Enter
+
+6. USAR O SISTEMA
+----------------
+INICIO:
+- Clique nos botoes para navegar entre as telas
+- Visualize KPIs e alertas
+- Clique em ATUALIZAR APS para recalcular
+
+OPERACOES:
+- Preencha o formulario de cadastro
+- Clique em SALVAR OP
+- A OP aparecera automaticamente no planejamento
+
+MAQUINAS:
+- Preencha o formulario de cadastro
+- Clique em SALVAR MAQUINA
+- A maquina aparecera automaticamente na timeline
+
+PLANEJAMENTO:
+- Visualize a timeline horizontal
+- Arraste os cards para reprogramar
+- Clique nos botoes para acoes especificas
+
+7. EXECUTAR TESTES
+------------------
+- Abra o VBA Editor (Alt+F11)
+- Janela Imediata (Ctrl+G)
+- Digite: ExecutarTesteFase3
+- Pressione Enter
+- Um log sera salvo na pasta do arquivo
+
+8. SOLUCAO DE PROBLEMAS
+-----------------------
+Se os botoes nao aparecerem:
+- Execute ConfigurarBotoesInicio
+- Execute ConfigurarBotoesOperacoes
+- Execute ConfigurarBotoesMaquinas
+
+Se os cards nao aparecerem:
+- Execute ConstruirTimelineAPS
+- Execute CriarCardsAPS
+
+Se a timeline nao aparecer:
+- Execute ConstruirTimelineAPS
+
+Se o dashboard nao atualizar:
+- Execute AtualizarDashboardAPS
+
+9. ESTRUTURA DE ARQUIVOS
+------------------------
+APS_23_08_2026/
+├── APS_PURAN_FINAL.xlsx
+├── Atrasos_APS.bas
+├── CadastroMaquina_APS.bas
+├── CadastroOP_APS.bas
+├── Cards_APS.bas
+├── Dashboard_APS.bas
+├── DragCards_APS.bas
+├── Eventos_APS.bas
+├── Final_APS.bas
+├── Globais_APS.bas
+├── Integracao_APS.bas
+├── Interface_APS.bas
+├── MotorCalculo_APS.bas
+├── Navegacao_APS.bas
+├── Refeicao_fixa_.bas
+├── Teste_Fase3.bas
+├── Timeline_APS.bas
+├── motor_APS.bas
+├── README.md
+├── MANUAL_INSTALACAO.md
+├── MANUAL_USUARIO.md
+├── RELATORIO_FINAL.md
+└── ...
+
+10. OBSERVACOES IMPORTANTES
+----------------------------
+- Nao delete ou modifique as abas tecnicas ocultas
+  (DADOS, RECURSOS, EVENTOS, REFEICAO, RESUMO, CONFIG)
+- Sempre faca backup do arquivo .xlsm antes de alteracoes
+- Os cadastros sao feitos nas telas OPERACOES e MAQUINAS
+  NAO nas abas tecnicas
+- Os cards sao criados automaticamente
+- Nao crie cards manualmente
+- Nao mova as abas de posicao
+- Nao renomeie as abas principais
+
+============================================================
+Suporte: Consulte MANUAL_INSTALACAO.md e MANUAL_USUARIO.md
+============================================================

@@ -1,0 +1,125 @@
+============================================================
+TESTES DO APS PURAN
+Sistema de Planejamento e Controle da Producao
+Versao: 2.0
+============================================================
+
+1. TESTES AUTOMATICOS (Teste_Fase3.bas)
+---------------------------------------
+Os testes sao executados via VBA no Excel Desktop.
+
+Para executar:
+1. Abra APS_PURAN.xlsm
+2. Pressione Alt+F11
+3. Ctrl+G para janela Imediata
+4. Digite: ExecutarTesteFase3
+5. Pressione Enter
+
+Testes incluidos:
+1. Inicializacao do sistema
+   - Verifica se todas as abas existem
+   - Verifica estrutura basica
+
+2. Configuracao de botoes
+   - Verifica se botoes sao criados
+   - Verifica vinculacao de macros
+
+3. Criacao de dados de teste
+   - Cria 3 maquinas
+   - Cria 6 OPs com duracoes variadas
+
+4. Recalculo do APS
+   - Executa motor de calculo
+   - Verifica sequenciamento
+
+5. Verificacao de cards
+   - Conta cards criados
+   - Verifica formato e texto
+
+6. Verificacao de timeline
+   - Conta maquinas na timeline
+   - Verifica estrutura horizontal
+
+7. Teste de atraso
+   - Aplica atraso de 2h em OP001
+   - Verifica propagacao para OP002
+
+8. Teste de manutencao
+   - Aplica evento de manutencao
+   - Verifica reposicionamento
+
+9. Teste de cadastro de maquina
+   - Cadastra ENC-03
+   - Verifica aparecimento na timeline
+
+10. Teste de cadastro de OP
+    - Cadastra OP007
+    - Verifica aparecimento no planejamento
+
+2. TESTES MANUAIS (Excel Desktop)
+---------------------------------
+Apos executar os testes automaticos, recomenda-se:
+
+1. Validacao visual da interface
+   - Verificar cores e formatacao
+   - Verificar botoes em todas as telas
+
+2. Validacao de navegacao
+   - INICIO -> OPERACOES
+   - INICIO -> MAQUINAS
+   - INICIO -> PLANEJAMENTO
+   - Voltar para INICIO
+
+3. Validacao de cadastros
+   - Cadastrar OP e verificar aparecimento
+   - Cadastrar maquina e verificar timeline
+
+4. Validacao de drag & drop
+   - Arrastar card para outra posicao
+   - Verificar atualizacao dos dados
+
+5. Validacao de atrasos
+   - Aplicar atraso
+   - Verificar propagacao
+
+6. Validacao de eventos
+   - Criar manutencao
+   - Verificar bloqueio de periodo
+
+7. Validacao de dashboard
+   - Verificar KPIs
+   - Verificar graficos
+
+3. CRITERIOS DE ACEITACAO
+--------------------------
+- Todos os 10 testes automaticos: PASS
+- Interface profissional em todas as telas
+- Cadastros funcionando sem criar abas
+- Timeline exibindo maquinas e horarios
+- Cards aparecendo automaticamente
+- Drag & Drop funcionando
+- Atrasos propagando corretamente
+- Eventos aplicando corretamente
+- Dashboard atualizando
+
+4. LIMITACOES DOS TESTES
+------------------------
+- Testes automaticos requerem Excel Desktop
+- Validacao visual requer Excel Desktop
+- Drag & Drop requer interacao manual
+- Este ambiente Linux nao permite execucao de VBA
+
+5. ARQUIVO DE LOG
+-----------------
+Os testes geram um arquivo de log:
+TESTE_FASE3_YYYYMMDD_HHMMSS.txt
+
+O log contem:
+- Data e hora do teste
+- Resultado de cada teste
+- Tempo total de execucao
+- Mensagens de erro (se houver)
+
+============================================================
+Fim da documentacao de testes
+============================================================

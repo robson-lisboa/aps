@@ -269,34 +269,6 @@ End Sub
 
 
 ' ============================================================
-' APLICAR EVENTOS (FLUXO PRINCIPAL)
-' ============================================================
-
-Public Sub AplicarEventosOperacional()
-
-    Application.ScreenUpdating = False
-    Application.EnableEvents = False
-    Application.Calculation = xlCalculationManual
-
-
-    On Error Resume Next
-
-    AplicarEventosAPS
-
-    On Error GoTo 0
-
-
-    Application.Calculation = xlCalculationAutomatic
-    Application.EnableEvents = True
-    Application.ScreenUpdating = True
-
-
-    AtualizarDashboardOperacional
-
-End Sub
-
-
-' ============================================================
 ' DESENHAR REFEIÇÕES (FLUXO PRINCIPAL)
 ' ============================================================
 

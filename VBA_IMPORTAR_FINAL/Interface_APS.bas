@@ -73,7 +73,7 @@ Public Sub ConfigurarBotoesInicio()
 
     CriarBotaoInicio _
         wsInicio, _
-        "📋 Ordens de Produção", _
+        "OPERACOES", _
         "IrParaOPs", _
         20, _
         20, _
@@ -85,7 +85,7 @@ Public Sub ConfigurarBotoesInicio()
 
     CriarBotaoInicio _
         wsInicio, _
-        "🏭 Máquinas", _
+        "MAQUINAS", _
         "IrParaMaquinas", _
         180, _
         20, _
@@ -97,7 +97,7 @@ Public Sub ConfigurarBotoesInicio()
 
     CriarBotaoInicio _
         wsInicio, _
-        "📅 Planejamento", _
+        "PLANEJAMENTO", _
         "IrParaPlanejamento", _
         340, _
         20, _
@@ -109,7 +109,7 @@ Public Sub ConfigurarBotoesInicio()
 
     CriarBotaoInicio _
         wsInicio, _
-        "⚠ Atrasos", _
+        "ATRASOS", _
         "AplicarAtrasosOperacional", _
         500, _
         20, _
@@ -121,7 +121,7 @@ Public Sub ConfigurarBotoesInicio()
 
     CriarBotaoInicio _
         wsInicio, _
-        "🔧 Eventos/Manutenção", _
+        "EVENTOS", _
         "AplicarEventosOperacional", _
         660, _
         20, _
@@ -133,7 +133,7 @@ Public Sub ConfigurarBotoesInicio()
 
     CriarBotaoInicio _
         wsInicio, _
-        "🍽 Refeições", _
+        "REFEICOES", _
         "DesenharRefeicoesOperacional", _
         20, _
         65, _
@@ -145,7 +145,7 @@ Public Sub ConfigurarBotoesInicio()
 
     CriarBotaoInicio _
         wsInicio, _
-        "🔄 Recalcular APS", _
+        "RECALCULAR APS", _
         "RecalcularAPSOperacional", _
         180, _
         65, _
@@ -157,7 +157,7 @@ Public Sub ConfigurarBotoesInicio()
 
     CriarBotaoInicio _
         wsInicio, _
-        "⚙ Configurações", _
+        "CONFIGURACOES", _
         "IrParaConfig", _
         340, _
         65, _
@@ -197,7 +197,7 @@ Public Sub ConfigurarBotoesInicio()
 
         CriarBotaoPlanejamento _
             wsPlan, _
-            "🔄 Recalcular", _
+            "Recalcular", _
             "RecalcularAPSOperacional", _
             10, _
             10, _
@@ -209,7 +209,7 @@ Public Sub ConfigurarBotoesInicio()
 
         CriarBotaoPlanejamento _
             wsPlan, _
-            "⚠ Atrasos", _
+            "Atrasos", _
             "AplicarAtrasosOperacional", _
             130, _
             10, _
@@ -221,7 +221,7 @@ Public Sub ConfigurarBotoesInicio()
 
         CriarBotaoPlanejamento _
             wsPlan, _
-            "🔧 Eventos", _
+            "Eventos", _
             "AplicarEventosOperacional", _
             240, _
             10, _
@@ -233,7 +233,7 @@ Public Sub ConfigurarBotoesInicio()
 
         CriarBotaoPlanejamento _
             wsPlan, _
-            "🍽 Refeições", _
+            "Refeicoes", _
             "DesenharRefeicoesOperacional", _
             350, _
             10, _
@@ -245,7 +245,7 @@ Public Sub ConfigurarBotoesInicio()
 
         CriarBotaoPlanejamento _
             wsPlan, _
-            "🏠 Dashboard", _
+            "Dashboard", _
             "IrParaInicio", _
             460, _
             10, _
@@ -409,6 +409,304 @@ Private Sub CriarBotaoPlanejamento( _
 
     shp.Fill.ForeColor.RGB = RGB(46, 117, 182)
 
+
+    shp.Line.Visible = msoFalse
+
+End Sub
+
+
+' ============================================================
+' CONFIGURAR BOTÕES DA ABA OPERACOES
+' ============================================================
+
+Public Sub ConfigurarBotoesOperacoes()
+
+    Dim wsOps As Worksheet
+
+    On Error Resume Next
+
+    Set wsOps = _
+        ThisWorkbook.Worksheets( _
+            ABA_OPERACOES)
+
+    On Error GoTo 0
+
+    If wsOps Is Nothing Then
+
+        MsgBox _
+            "Aba OPERACOES não encontrada.", _
+            vbCritical, _
+            "APS"
+
+        Exit Sub
+
+    End If
+
+
+    Dim i As Long
+
+    For i = wsOps.Shapes.Count To 1 Step -1
+
+        If Left( _
+            wsOps.Shapes(i).Name, _
+            14) = "APS_OPS_BTN_" Then
+
+            wsOps.Shapes(i).Delete
+
+        End If
+
+    Next i
+
+
+    CriarBotaoOperacoes _
+        wsOps, _
+        "SALVAR OP", _
+        "SalvarNovaOP", _
+        20, _
+        230, _
+        120, _
+        30
+
+
+    CriarBotaoOperacoes _
+        wsOps, _
+        "ATUALIZAR LISTA", _
+        "RecalcularAPSOperacional", _
+        150, _
+        230, _
+        140, _
+        30
+
+
+    CriarBotaoOperacoes _
+        wsOps, \
+        "VOLTAR", \
+        "IrParaInicio", \
+        300, \
+        230, \
+        100, \
+        30
+
+
+    MsgBox _
+        "Botões de OPERACOES configurados.", _
+        vbInformation, _
+        "APS"
+
+End Sub
+
+
+' ============================================================
+' CRIAR BOTÃO OPERACOES
+' ============================================================
+
+Private Sub CriarBotaoOperacoes( _
+    ByVal ws As Worksheet, _
+    ByVal texto As String, _
+    ByVal macro As String, _
+    ByVal posLeft As Double, _
+    ByVal posTop As Double, _
+    ByVal largura As Double, _
+    ByVal altura As Double)
+
+    Dim shp As Shape
+
+    Dim nomeSeguro As String
+
+
+    nomeSeguro = _
+        "APS_OPS_BTN_" & _
+        Replace(Replace(texto, " ", "_"), "/", "_")
+
+
+    Set shp = _
+        ws.Shapes.AddShape( _
+            msoShapeRoundedRectangle, _
+            posLeft, _
+            posTop, _
+            largura, _
+            altura)
+
+
+    shp.Name = nomeSeguro
+
+    shp.TextFrame2.TextRange.Text = texto
+
+    shp.OnAction = macro
+
+    shp.Placement = xlFreeFloating
+
+    With shp.TextFrame2
+
+        .VerticalAnchor = msoAnchorMiddle
+
+        .TextRange.ParagraphFormat.Alignment = _
+            msoAlignCenter
+
+        .MarginLeft = 3
+        .MarginRight = 3
+        .MarginTop = 2
+        .MarginBottom = 2
+
+    End With
+
+    With shp.TextFrame2.TextRange.Font
+
+        .Size = 10
+        .Bold = msoTrue
+
+    End With
+
+    shp.Fill.ForeColor.RGB = RGB(46, 117, 182)
+
+    shp.Line.Visible = msoFalse
+
+End Sub
+
+
+' ============================================================
+' CONFIGURAR BOTÕES DA ABA MAQUINAS
+' ============================================================
+
+Public Sub ConfigurarBotoesMaquinas()
+
+    Dim wsMaq As Worksheet
+
+    On Error Resume Next
+
+    Set wsMaq = _
+        ThisWorkbook.Worksheets( _
+            ABA_MAQUINAS)
+
+    On Error GoTo 0
+
+    If wsMaq Is Nothing Then
+
+        MsgBox _
+            "Aba MAQUINAS não encontrada.", _
+            vbCritical, _
+            "APS"
+
+        Exit Sub
+
+    End If
+
+
+    Dim i As Long
+
+    For i = wsMaq.Shapes.Count To 1 Step -1
+
+        If Left( _
+            wsMaq.Shapes(i).Name, _
+            14) = "APS_MAQ_BTN_" Then
+
+            wsMaq.Shapes(i).Delete
+
+        End If
+
+    Next i
+
+
+    CriarBotaoMaquinas _
+        wsMaq, _
+        "SALVAR MAQUINA", \
+        "SalvarNovaMaquina", \
+        20, \
+        175, \
+        150, \
+        30
+
+
+    CriarBotaoMaquinas _
+        wsMaq, \
+        "ATUALIZAR LISTA", \
+        "RecalcularAPSOperacional", \
+        180, \
+        175, \
+        160, \
+        30
+
+
+    CriarBotaoMaquinas _
+        wsMaq, \
+        "VOLTAR", \
+        "IrParaInicio", \
+        350, \
+        175, \
+        100, \
+        30
+
+
+    MsgBox _
+        "Botões de MAQUINAS configurados.", \
+        vbInformation, \
+        "APS"
+
+End Sub
+
+
+' ============================================================
+' CRIAR BOTÃO MAQUINAS
+' ============================================================
+
+Private Sub CriarBotaoMaquinas( _
+    ByVal ws As Worksheet, _
+    ByVal texto As String, _
+    ByVal macro As String, _
+    ByVal posLeft As Double, _
+    ByVal posTop As Double, _
+    ByVal largura As Double, _
+    ByVal altura As Double)
+
+    Dim shp As Shape
+
+    Dim nomeSeguro As String
+
+
+    nomeSeguro = _
+        "APS_MAQ_BTN_" & _
+        Replace(Replace(texto, " ", "_"), "/", "_")
+
+
+    Set shp = _
+        ws.Shapes.AddShape( _
+            msoShapeRoundedRectangle, \
+            posLeft, \
+            posTop, \
+            largura, \
+            altura)
+
+
+    shp.Name = nomeSeguro
+
+    shp.TextFrame2.TextRange.Text = texto
+
+    shp.OnAction = macro
+
+    shp.Placement = xlFreeFloating
+
+    With shp.TextFrame2
+
+        .VerticalAnchor = msoAnchorMiddle
+
+        .TextRange.ParagraphFormat.Alignment = _
+            msoAlignCenter
+
+        .MarginLeft = 3
+        .MarginRight = 3
+        .MarginTop = 2
+        .MarginBottom = 2
+
+    End With
+
+    With shp.TextFrame2.TextRange.Font
+
+        .Size = 10
+        .Bold = msoTrue
+
+    End With
+
+    shp.Fill.ForeColor.RGB = RGB(46, 117, 182)
 
     shp.Line.Visible = msoFalse
 

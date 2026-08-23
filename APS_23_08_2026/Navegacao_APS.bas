@@ -28,7 +28,7 @@ End Sub
 
 
 Public Sub IrParaOPs()
-    IrParaAba "OPs"
+    IrParaAba "OPERACOES"
 End Sub
 
 

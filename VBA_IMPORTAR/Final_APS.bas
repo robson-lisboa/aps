@@ -102,6 +102,10 @@ Public Sub IniciarSistemaAPS()
 
     CriarBotoesAPS
 
+    ConfigurarBotoesOperacoes
+
+    ConfigurarBotoesMaquinas
+
 
     Application.Calculate
 

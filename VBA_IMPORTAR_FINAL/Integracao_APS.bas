@@ -1,0 +1,709 @@
+Option Explicit
+
+' ============================================================
+' MÓDULO 10 - INTEGRAÇÃO FINAL APS
+' ============================================================
+'
+' ESTE É O MÓDULO CENTRAL DO PROJETO.
+'
+' FLUXO:
+'
+' DADOS
+'   ↓
+' PLANEJAMENTO
+'   ↓
+' TIMELINE
+'   ↓
+' CARDS
+'   ↓
+' DASHBOARD
+'
+' ============================================================
+
+Private Const ABA_PLAN As String = "PLANEJAMENTO"
+Private Const ABA_RESUMO As String = "RESUMO"
+
+
+' ============================================================
+' COMANDO PRINCIPAL
+' ============================================================
+
+Public Sub AtualizarAPS()
+
+    On Error GoTo TrataErro
+
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+
+    Application.Calculation = xlCalculationManual
+
+
+    ' --------------------------------------------------------
+    ' 1. GARANTIR ESTRUTURA
+    ' --------------------------------------------------------
+
+    GarantirEstrutura
+
+
+    ' --------------------------------------------------------
+    ' 2. RECALCULAR FÓRMULAS
+    ' --------------------------------------------------------
+
+    Application.Calculate
+
+
+    ' --------------------------------------------------------
+    ' 2.5 EXECUTAR MOTOR DE CÁLCULO
+    '
+    ' Calcula Capacidade_h, Produção_h, Setup_h e Duração
+    ' Base_h a partir de RECURSOS, e já recalcula
+    ' "Duração Total (h)" somando Atraso_h e Eventos_h.
+    ' --------------------------------------------------------
+
+    ExecutarMotorAPS
+
+
+    ' --------------------------------------------------------
+    ' 2.6 RECALCULAR SEQUENCIAMENTO
+    ' --------------------------------------------------------
+
+    RecalcularSequenciamentoAPS
+
+
+    ' --------------------------------------------------------
+    ' 3. RECONSTRUIR TIMELINE
+    ' --------------------------------------------------------
+
+    ConstruirTimelineAPS
+
+
+    ' --------------------------------------------------------
+    ' 4. CRIAR / ATUALIZAR CARDS
+    ' --------------------------------------------------------
+
+    ApagarCardsAPS
+
+    CriarCardsAPS
+
+    ApagarCardsOrfaos
+
+
+    ' --------------------------------------------------------
+    ' 5. ATUALIZAR DASHBOARD
+    ' --------------------------------------------------------
+
+    AtualizarDashboardAPS
+
+
+    ' --------------------------------------------------------
+    ' 6. REAPLICAR CÁLCULO
+    ' --------------------------------------------------------
+
+    Application.Calculate
+
+
+    Application.Calculation = xlCalculationAutomatic
+
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+
+
+    MsgBox _
+        "APS atualizado com sucesso!" & _
+        vbCrLf & vbCrLf & _
+        "✓ Dados recalculados" & vbCrLf & _
+        "✓ Motor de cálculo executado" & vbCrLf & _
+        "✓ Timeline atualizada" & vbCrLf & _
+        "✓ Cards atualizados" & vbCrLf & _
+        "✓ Dashboard atualizado", _
+        vbInformation, _
+        "APS"
+
+
+    Exit Sub
+
+
+TrataErro:
+
+    Application.Calculation = xlCalculationAutomatic
+
+    Application.EnableEvents = True
+
+    Application.ScreenUpdating = True
+
+
+    MsgBox _
+        "O APS encontrou um erro:" & _
+        vbCrLf & vbCrLf & _
+        Err.Description, _
+        vbCritical, _
+        "APS - Erro"
+
+End Sub
+
+
+' ============================================================
+' APLICAR ALTERAÇÃO FEITA PELO ARRASTE
+' ============================================================
+
+Public Sub AplicarAlteracoesCards()
+
+    On Error GoTo TrataErro
+
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+
+
+    ' --------------------------------------------------------
+    ' Módulo 8:
+    '
+    ' posição do card
+    '      ↓
+    ' novo horário
+    '      ↓
+    ' recalcular programação
+    ' --------------------------------------------------------
+
+    AplicarPosicaoDosCards
+
+    ApagarCardsOrfaos
+
+
+    ' --------------------------------------------------------
+    ' Atualizar dashboard
+    ' --------------------------------------------------------
+
+    AtualizarDashboardAPS
+
+
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+
+
+    Exit Sub
+
+
+TrataErro:
+
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+
+
+    MsgBox _
+        "Erro ao aplicar as alterações:" & _
+        vbCrLf & vbCrLf & _
+        Err.Description, _
+        vbCritical, _
+        "APS"
+
+End Sub
+
+
+' ============================================================
+' GARANTIR ESTRUTURA
+' ============================================================
+
+Private Sub GarantirEstrutura()
+
+    Dim ws As Worksheet
+
+
+    ' --------------------------------------------------------
+    ' DADOS
+    ' --------------------------------------------------------
+
+    Set ws = ObterAba(ABA_DADOS)
+
+    If ws Is Nothing Then
+
+        MsgBox _
+            "A aba DADOS não foi encontrada.", _
+            vbCritical, _
+            "APS"
+
+        Err.Raise _
+            vbObjectError + 100, _
+            "APS", _
+            "Aba DADOS inexistente."
+
+    End If
+
+
+    ' --------------------------------------------------------
+    ' PLANEJAMENTO
+    ' --------------------------------------------------------
+
+    Set ws = ObterAba(ABA_PLAN)
+
+    If ws Is Nothing Then
+
+        Set ws = _
+            ThisWorkbook.Worksheets.Add( _
+                After:= _
+                ThisWorkbook.Worksheets( _
+                    ThisWorkbook.Worksheets.Count))
+
+
+        ws.Name = ABA_PLAN
+
+    End If
+
+
+    ' --------------------------------------------------------
+    ' RESUMO
+    ' --------------------------------------------------------
+
+    Set ws = ObterAba(ABA_RESUMO)
+
+    If ws Is Nothing Then
+
+        Set ws = _
+            ThisWorkbook.Worksheets.Add( _
+                After:= _
+                ThisWorkbook.Worksheets( _
+                    ThisWorkbook.Worksheets.Count))
+
+
+        ws.Name = ABA_RESUMO
+
+    End If
+
+End Sub
+
+
+' ============================================================
+' OBTER ABA
+' ============================================================
+
+Private Function ObterAba( _
+    ByVal nome As String) As Worksheet
+
+    On Error Resume Next
+
+    Set ObterAba = _
+        ThisWorkbook.Worksheets(nome)
+
+    On Error GoTo 0
+
+End Function
+
+
+' ============================================================
+' CRIAR BOTÕES DO SISTEMA
+' ============================================================
+
+Public Sub CriarBotoesAPS()
+
+    On Error GoTo TrataErro
+
+    Dim ws As Worksheet
+
+
+    Set ws = _
+        ThisWorkbook.Worksheets( _
+            ABA_PLAN)
+
+
+    Application.ScreenUpdating = False
+
+
+    ' --------------------------------------------------------
+    ' APAGAR BOTÕES ANTIGOS
+    ' --------------------------------------------------------
+
+    ApagarBotoesAPS ws
+
+
+    ' --------------------------------------------------------
+    ' BOTÃO 1
+    ' --------------------------------------------------------
+
+    CriarBotao _
+        ws, _
+        "ATUALIZAR APS", _
+        "AtualizarAPS", _
+        ws.Range("A1").Left, _
+        ws.Range("A1").Top - 35, _
+        130, _
+        30
+
+
+    ' --------------------------------------------------------
+    ' BOTÃO 2
+    ' --------------------------------------------------------
+
+    CriarBotao _
+        ws, _
+        "APLICAR CARDS", _
+        "AplicarAlteracoesCards", _
+        ws.Range("C1").Left, _
+        ws.Range("C1").Top - 35, _
+        130, _
+        30
+
+
+    ' --------------------------------------------------------
+    ' BOTÃO 3
+    ' --------------------------------------------------------
+
+    CriarBotao _
+        ws, _
+        "TIMELINE", _
+        "ConstruirTimelineAPS", _
+        ws.Range("E1").Left, _
+        ws.Range("E1").Top - 35, _
+        110, _
+        30
+
+
+    ' --------------------------------------------------------
+    ' BOTÃO 4
+    ' --------------------------------------------------------
+
+    CriarBotao _
+        ws, _
+        "DASHBOARD", _
+        "AtualizarDashboardAPS", _
+        ws.Range("G1").Left, _
+        ws.Range("G1").Top - 35, _
+        120, _
+        30
+
+
+    ' --------------------------------------------------------
+    ' BOTÃO 5
+    ' --------------------------------------------------------
+
+    CriarBotao _
+        ws, _
+        "LIMPAR CARDS", _
+        "ApagarCardsAPS", _
+        ws.Range("I1").Left, _
+        ws.Range("I1").Top - 35, _
+        120, _
+        30
+
+
+    ' --------------------------------------------------------
+    ' BOTÃO 6
+    ' --------------------------------------------------------
+
+    CriarBotao _
+        ws, _
+        "ATRASOS", _
+        "AtualizarAtrasosAPS", _
+        ws.Range("K1").Left, _
+        ws.Range("K1").Top - 35, _
+        110, _
+        30
+
+
+    ' --------------------------------------------------------
+    ' BOTÃO 7
+    ' --------------------------------------------------------
+
+    CriarBotao _
+        ws, _
+        "EVENTOS", _
+        "AplicarEventosAPS", _
+        ws.Range("M1").Left, _
+        ws.Range("M1").Top - 35, _
+        110, _
+        30
+
+
+    ' --------------------------------------------------------
+    ' BOTÃO 8
+    ' --------------------------------------------------------
+
+    CriarBotao _
+        ws, _
+        "REFEIÇÃO", _
+        "DesenharRefeicoes", _
+        ws.Range("O1").Left, _
+        ws.Range("O1").Top - 35, _
+        110, _
+        30
+
+
+    ' --------------------------------------------------------
+    ' BOTÃO 9
+    ' --------------------------------------------------------
+
+    CriarBotao _
+        ws, _
+        "MOTOR", _
+        "ExecutarMotorAPS", _
+        ws.Range("Q1").Left, _
+        ws.Range("Q1").Top - 35, _
+        100, _
+        30
+
+
+    Application.ScreenUpdating = True
+
+
+    MsgBox _
+        "Botões criados com sucesso.", _
+        vbInformation, _
+        "APS"
+
+
+    Exit Sub
+
+
+TrataErro:
+
+    Application.ScreenUpdating = True
+
+
+    MsgBox _
+        "Erro ao criar os botões:" & _
+        vbCrLf & vbCrLf & _
+        Err.Description, _
+        vbCritical, _
+        "APS"
+
+End Sub
+
+
+' ============================================================
+' CRIAR BOTÃO
+' ============================================================
+
+Private Sub CriarBotao( _
+    ByVal ws As Worksheet, _
+    ByVal texto As String, _
+    ByVal macro As String, _
+    ByVal posLeft As Double, _
+    ByVal posTop As Double, _
+    ByVal largura As Double, _
+    ByVal altura As Double)
+
+    Dim shp As Shape
+
+
+    Set shp = _
+        ws.Shapes.AddShape( _
+            msoShapeRoundedRectangle, _
+            posLeft, _
+            posTop, _
+            largura, _
+            altura)
+
+
+    shp.Name = _
+        "APS_BTN_" & _
+        Replace(texto, " ", "_")
+
+
+    shp.TextFrame2.TextRange.Text = _
+        texto
+
+
+    shp.OnAction = macro
+
+
+    shp.Placement = _
+        xlFreeFloating
+
+
+    With shp.TextFrame2
+
+        .VerticalAnchor = _
+            msoAnchorMiddle
+
+        .TextRange.ParagraphFormat.Alignment = _
+            msoAlignCenter
+
+        .MarginLeft = 3
+        .MarginRight = 3
+        .MarginTop = 2
+        .MarginBottom = 2
+
+    End With
+
+
+    With shp.TextFrame2.TextRange.Font
+
+        .Size = 9
+
+        .Bold = msoTrue
+
+    End With
+
+End Sub
+
+
+' ============================================================
+' APAGAR BOTÕES
+' ============================================================
+
+Private Sub ApagarBotoesAPS( _
+    ByVal ws As Worksheet)
+
+    Dim i As Long
+
+
+    For i = ws.Shapes.Count To 1 Step -1
+
+
+        If Left( _
+            ws.Shapes(i).Name, _
+            8) = "APS_BTN_" Then
+
+
+            ws.Shapes(i).Delete
+
+
+        End If
+
+
+    Next i
+
+End Sub
+
+
+' ============================================================
+' ATUALIZAÇÃO RÁPIDA
+'
+' Para usar quando você só alterou uma informação.
+' ============================================================
+
+Public Sub AtualizacaoRapidaAPS()
+
+    On Error GoTo TrataErro
+
+
+    Application.ScreenUpdating = False
+
+
+    Application.Calculate
+
+
+    AtualizarDashboardAPS
+
+
+    AtualizarCardsAPS
+
+
+    Application.ScreenUpdating = True
+
+
+    Exit Sub
+
+
+TrataErro:
+
+    Application.ScreenUpdating = True
+
+
+    MsgBox _
+        "Erro na atualização rápida:" & _
+        vbCrLf & vbCrLf & _
+        Err.Description, _
+        vbCritical, _
+        "APS"
+
+End Sub
+
+
+' ============================================================
+' RECONSTRUIR TODO O SISTEMA
+'
+' Útil depois de alterar estrutura.
+' ============================================================
+
+Public Sub ReconstruirAPS()
+
+    On Error GoTo TrataErro
+
+
+    Application.ScreenUpdating = False
+
+
+    ' --------------------------------------------------------
+    ' Timeline
+    ' --------------------------------------------------------
+
+    ConstruirTimelineAPS
+
+
+    ' --------------------------------------------------------
+    ' Cards
+    ' --------------------------------------------------------
+
+    ApagarCardsAPS
+
+    CriarCardsAPS
+
+
+    ' --------------------------------------------------------
+    ' Dashboard
+    ' --------------------------------------------------------
+
+    CriarDashboardAPS
+
+
+    ' --------------------------------------------------------
+    ' Botões
+    ' --------------------------------------------------------
+
+    CriarBotoesAPS
+
+
+    Application.ScreenUpdating = True
+
+
+    MsgBox _
+        "Sistema APS reconstruído.", _
+        vbInformation, _
+        "APS"
+
+
+    Exit Sub
+
+
+TrataErro:
+
+    Application.ScreenUpdating = True
+
+
+    MsgBox _
+        "Erro ao reconstruir o APS:" & _
+        vbCrLf & vbCrLf & _
+        Err.Description, _
+        vbCritical, _
+        "APS"
+
+End Sub
+
+
+' ============================================================
+' ATUALIZAR AO ABRIR
+'
+' ESTA MACRO PODE SER CHAMADA PELO ThisWorkbook.
+' ============================================================
+
+Public Sub InicializarAPS()
+
+    On Error Resume Next
+
+
+    GarantirEstrutura
+
+
+    CriarBotoesAPS
+
+
+    AtualizarDashboardAPS
+
+
+    On Error GoTo 0
+
+End Sub
+
+
+' ============================================================
+' FIM DO MÓDULO 10
+' ============================================================

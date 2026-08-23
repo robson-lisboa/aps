@@ -6,12 +6,28 @@ Esta pasta contém os arquivos finais do projeto APS PURAN.
 
 | Arquivo | Descrição |
 |---------|-----------|
-| `APS_PURAN_Fase2.xlsx` | Planilha base com estrutura de abas e interface visual |
-| `VBA_IMPORTAR/` | Pasta com todos os módulos `.bas` prontos para importar |
+| `APS_PURAN_FINAL.xlsx` | Planilha final com interface de 4 telas: INICIO, OPs, MAQUINAS, PLANEJAMENTO |
+| `README.md` | Este arquivo |
+
+## Estrutura do sistema
+
+### Abas visíveis
+- **INICIO** — Dashboard operacional com KPIs e menu principal
+- **OPs** — Cadastro e consulta de ordens de produção
+- **MAQUINAS** — Cadastro de máquinas/recursos
+- **PLANEJAMENTO** — Timeline horizontal, cards flutuantes, drag & drop
+
+### Abas técnicas ocultas
+- `DADOS`
+- `RECURSOS`
+- `EVENTOS`
+- `REFEICAO`
+- `RESUMO`
+- `CONFIG`
 
 ## Como montar o arquivo `.xlsm`
 
-1. Abra `APS_PURAN_Fase2.xlsx` no Excel Desktop.
+1. Abra `APS_PURAN_FINAL.xlsx` no Excel Desktop.
 2. Habilite as macros quando solicitado.
 3. Pressione `Alt+F11` para abrir o VBA Editor.
 4. Importe os módulos na ordem abaixo:
@@ -48,22 +64,21 @@ Esta pasta contém os arquivos finais do projeto APS PURAN.
 5. Teste eventos/manutenção
 6. Teste cadastro de máquina e OP
 
-## Estrutura de abas
+## Funcionalidades implementadas
 
-| Aba visível | Função |
-|-------------|--------|
-| **INICIO** | Dashboard operacional e menu principal |
-| **OPs** | Cadastro e consulta de ordens de produção |
-| **MAQUINAS** | Cadastro de máquinas/recursos |
-| **PLANEJAMENTO** | Timeline horizontal, cards, drag & drop |
-
-Abas técnicas ocultas:
-- `DADOS`
-- `RECURSOS`
-- `EVENTOS`
-- `REFEICAO`
-- `RESUMO`
-- `CONFIG`
+- ✅ Cálculo de duração das OPs
+- ✅ Sequenciamento por máquina
+- ✅ Criação e atualização de cards flutuantes
+- ✅ Drag & Drop funcional
+- ✅ Propagação de atrasos
+- ✅ Eventos/manutenção
+- ✅ Refeições
+- ✅ Timeline horizontal
+- ✅ Dashboard com KPIs
+- ✅ Remoção de cards órfãos
+- ✅ Interface de 4 telas
+- ✅ Botões programaticamente vinculados
+- ✅ Dados de teste automáticos
 
 ## Suporte
 

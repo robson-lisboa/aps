@@ -1376,6 +1376,7 @@ Public Sub RecalcularSequenciamentoAPS()
     Dim inicio As Date
     Dim fim As Date
     Dim duracao As Double
+    Dim validoDuracao As Boolean
 
     Dim status As String
 
@@ -1555,7 +1556,8 @@ Public Sub RecalcularSequenciamentoAPS()
                 LerNumeroSeguro( _
                     wsDados, _
                     linha, _
-                    COLUNA_DURACAO_TOTAL_MOTOR)
+                    COLUNA_DURACAO_TOTAL_MOTOR, _
+                    validoDuracao)
 
 
             ' ------------------------------------------------

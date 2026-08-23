@@ -126,6 +126,86 @@ End Sub
 
 
 ' ============================================================
+' REMOVER CARDS ÓRFÃOS
+' ============================================================
+
+Public Sub ApagarCardsOrfaos()
+
+    Dim wsPlan As Worksheet
+    Dim wsDados As Worksheet
+
+    Dim i As Long
+    Dim partes As Variant
+    Dim op As String
+
+    Dim linhaOP As Long
+
+
+    On Error Resume Next
+
+    Set wsPlan = _
+        ThisWorkbook.Worksheets( _
+            ABA_PLANEJAMENTO)
+
+    Set wsDados = _
+        ThisWorkbook.Worksheets( _
+            ABA_DADOS)
+
+    On Error GoTo 0
+
+    If wsPlan Is Nothing Then Exit Sub
+
+    If wsDados Is Nothing Then Exit Sub
+
+
+    For i = wsPlan.Shapes.Count To 1 Step -1
+
+
+        If EhCardAPS(wsPlan.Shapes(i)) Then
+
+
+            partes = _
+                Split( _
+                    wsPlan.Shapes(i).AlternativeText, _
+                    "|")
+
+
+            If UBound(partes) >= ALT_IDX_OP Then
+
+                op = _
+                    Trim$(CStr(partes(ALT_IDX_OP)))
+
+
+                If op <> "" Then
+
+
+                    linhaOP = _
+                        EncontrarLinhaOP( _
+                            wsDados, _
+                            op)
+
+
+                    If linhaOP = 0 Then
+
+
+                        wsPlan.Shapes(i).Delete
+
+
+                    End If
+
+                End If
+
+            End If
+
+        End If
+
+
+    Next i
+
+End Sub
+
+
+' ============================================================
 ' VERIFICAR CARD
 ' ============================================================
 

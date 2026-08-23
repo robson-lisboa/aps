@@ -64,6 +64,13 @@ Public Sub AtualizarAPS()
 
 
     ' --------------------------------------------------------
+    ' 2.6 RECALCULAR SEQUENCIAMENTO
+    ' --------------------------------------------------------
+
+    RecalcularSequenciamentoAPS
+
+
+    ' --------------------------------------------------------
     ' 3. RECONSTRUIR TIMELINE
     ' --------------------------------------------------------
 
@@ -77,6 +84,8 @@ Public Sub AtualizarAPS()
     ApagarCardsAPS
 
     CriarCardsAPS
+
+    ApagarCardsOrfaos
 
 
     ' --------------------------------------------------------
@@ -156,6 +165,8 @@ Public Sub AplicarAlteracoesCards()
     ' --------------------------------------------------------
 
     AplicarPosicaoDosCards
+
+    ApagarCardsOrfaos
 
 
     ' --------------------------------------------------------

@@ -193,6 +193,13 @@ Public Sub ExecutarMotorAPS()
 
     calculoOK = True
 
+    ' --------------------------------------------------------
+    ' SEQUENCIAMENTO
+    ' --------------------------------------------------------
+
+    RecalcularSequenciamentoAPS
+
+
 SaidaNormal:
 
     ' --------------------------------------------------------
@@ -1314,6 +1321,400 @@ Private Sub LimparCalculosOP( _
     RecalcularDuracaoOP _
         ws, _
         linha
+
+End Sub
+
+
+' ============================================================
+' RECALCULAR SEQUENCIAMENTO
+' ============================================================
+'
+' Centraliza a lógica de Início/Fim por máquina e sequência.
+'
+' Regra:
+'
+'   Para cada OP:
+'
+'   Início base = primeira data válida entre:
+'       Início Original
+'       Data Planejada
+'       Início atual
+'
+'   Se é a primeira OP da máquina OU mudou de máquina:
+'       Início = Início base
+'   Senão:
+'       Início = max(Início base, Fim da OP anterior)
+'
+'   Fim = Início + Duração Total (h)
+'
+'   Status atualizado automaticamente.
+'
+' ============================================================
+
+Public Sub RecalcularSequenciamentoAPS()
+
+    Dim wsDados As Worksheet
+
+    Dim ultimaLinha As Long
+    Dim linha As Long
+
+    Dim colOP As Long
+    Dim colMaquina As Long
+    Dim colSequencia As Long
+    Dim colInicioOriginal As Long
+    Dim colDataPlanejada As Long
+    Dim colInicio As Long
+    Dim colFim As Long
+    Dim colDuracao As Long
+    Dim colStatus As Long
+
+    Dim maquinaAnterior As String
+    Dim fimAnterior As Date
+
+    Dim maquina As String
+    Dim inicioBase As Date
+    Dim inicio As Date
+    Dim fim As Date
+    Dim duracao As Double
+
+    Dim status As String
+
+    Dim calcAnterior As XlCalculation
+    Dim eventosAnterior As Boolean
+    Dim telaAnterior As Boolean
+    Dim statusBarAnterior As Variant
+
+
+    On Error GoTo TrataErro
+
+
+    ' --------------------------------------------------------
+    ' PRESERVAR ESTADO
+    ' --------------------------------------------------------
+
+    calcAnterior = Application.Calculation
+    eventosAnterior = Application.EnableEvents
+    telaAnterior = Application.ScreenUpdating
+    statusBarAnterior = Application.StatusBar
+
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+    Application.Calculation = xlCalculationManual
+
+
+    ' --------------------------------------------------------
+    ' LOCALIZAR PLANILHA
+    ' --------------------------------------------------------
+
+    Set wsDados = _
+        ObterPlanilhaMotor(ABA_DADOS)
+
+    If wsDados Is Nothing Then
+
+        Err.Raise _
+            vbObjectError + 507, _
+            "RecalcularSequenciamentoAPS", _
+            "Aba DADOS não encontrada."
+
+    End If
+
+
+    ' --------------------------------------------------------
+    ' LOCALIZAR COLUNAS
+    ' --------------------------------------------------------
+
+    colOP = _
+        EncontrarColunaMotor( _
+            wsDados, _
+            "OP")
+
+    colMaquina = _
+        EncontrarColunaMotor( _
+            wsDados, _
+            "Máquina")
+
+    colSequencia = _
+        EncontrarColunaMotor( _
+            wsDados, _
+            "Sequência")
+
+    colInicioOriginal = _
+        EncontrarColunaMotor( _
+            wsDados, _
+            "Início Original")
+
+    colDataPlanejada = _
+        EncontrarColunaMotor( _
+            wsDados, _
+            "Data Planejada")
+
+    colInicio = _
+        EncontrarColunaMotor( _
+            wsDados, _
+            "Início")
+
+    colFim = _
+        EncontrarColunaMotor( _
+            wsDados, _
+            "Fim")
+
+    colDuracao = _
+        EncontrarColunaMotor( _
+            wsDados, _
+            COLUNA_DURACAO_TOTAL_MOTOR)
+
+    colStatus = _
+        EncontrarColunaMotor( _
+            wsDados, _
+            "Status")
+
+
+    If colOP = 0 _
+       Or colMaquina = 0 _
+       Or colInicio = 0 _
+       Or colFim = 0 _
+       Or colDuracao = 0 Then
+
+        Err.Raise _
+            vbObjectError + 508, _
+            "RecalcularSequenciamentoAPS", _
+            "Colunas obrigatórias não encontradas na aba DADOS."
+
+    End If
+
+
+    ' --------------------------------------------------------
+    ' GARANTIR ORDENAÇÃO
+    ' --------------------------------------------------------
+
+    If colSequencia > 0 Then
+
+        wsDados.Sort.SortFields.Clear
+
+        wsDados.Sort.SortFields.Add _
+            Key:=wsDados.Range( _
+                wsDados.Cells(2, colMaquina), _
+                wsDados.Cells(wsDados.Rows.Count, colMaquina)), _
+            SortOn:=xlSortOnValues, _
+            Order:=xlAscending, _
+            DataOption:=xlSortNormal
+
+        wsDados.Sort.SortFields.Add _
+            Key:=wsDados.Range( _
+                wsDados.Cells(2, colSequencia), _
+                wsDados.Cells(wsDados.Rows.Count, colSequencia)), _
+            SortOn:=xlSortOnValues, _
+            Order:=xlAscending, _
+            DataOption:=xlSortNormal
+
+        wsDados.Sort.SetRange _
+            wsDados.Range( _
+                wsDados.Cells(1, 1), _
+                wsDados.Cells(wsDados.Rows.Count, wsDados.Columns.Count))
+
+        wsDados.Sort.Header = xlYes
+        wsDados.Sort.MatchCase = False
+        wsDados.Sort.Orientation = xlTopToBottom
+        wsDados.Sort.Apply
+
+    End If
+
+
+    ' --------------------------------------------------------
+    ' ÚLTIMA LINHA
+    ' --------------------------------------------------------
+
+    ultimaLinha = _
+        wsDados.Cells( _
+            wsDados.Rows.Count, _
+            colOP).End(xlUp).Row
+
+
+    ' --------------------------------------------------------
+    ' PERCORRER OPs
+    ' --------------------------------------------------------
+
+    maquinaAnterior = ""
+    fimAnterior = 0
+
+    For linha = 2 To ultimaLinha
+
+
+        If Trim$(CStr(wsDados.Cells(linha, colOP).Value)) <> "" Then
+
+
+            maquina = _
+                Trim$(CStr(wsDados.Cells(linha, colMaquina).Value))
+
+
+            ' ------------------------------------------------
+            ' DURAÇÃO TOTAL
+            ' ------------------------------------------------
+
+            duracao = _
+                LerNumeroSeguro( _
+                    wsDados, _
+                    linha, _
+                    COLUNA_DURACAO_TOTAL_MOTOR)
+
+
+            ' ------------------------------------------------
+            ' INÍCIO BASE
+            ' ------------------------------------------------
+
+            inicioBase = 0
+
+            If colInicioOriginal > 0 Then
+
+                If IsDate(wsDados.Cells(linha, colInicioOriginal).Value) Then
+
+                    inicioBase = _
+                        CDate(wsDados.Cells(linha, colInicioOriginal).Value)
+
+                End If
+
+            End If
+
+
+            If inicioBase = 0 _
+               And colDataPlanejada > 0 Then
+
+                If IsDate(wsDados.Cells(linha, colDataPlanejada).Value) Then
+
+                    inicioBase = _
+                        CDate(wsDados.Cells(linha, colDataPlanejada).Value)
+
+                End If
+
+            End If
+
+
+            If inicioBase = 0 _
+               And colInicio > 0 Then
+
+                If IsDate(wsDados.Cells(linha, colInicio).Value) Then
+
+                    inicioBase = _
+                        CDate(wsDados.Cells(linha, colInicio).Value)
+
+                End If
+
+            End If
+
+
+            ' ------------------------------------------------
+            ' PRIMEIRA OP DA MÁQUINA
+            ' ------------------------------------------------
+
+            If StrComp(maquina, maquinaAnterior, vbTextCompare) <> 0 Then
+
+                inicio = inicioBase
+
+            Else
+
+                ' ------------------------------------------------
+                ' OP SEGUINTE DA MESMA MÁQUINA
+                ' ------------------------------------------------
+
+                If fimAnterior > inicioBase Then
+
+                    inicio = fimAnterior
+
+                Else
+
+                    inicio = inicioBase
+
+                End If
+
+            End If
+
+
+            ' ------------------------------------------------
+            ' CALCULAR FIM
+            ' ------------------------------------------------
+
+            fim = inicio + duracao / 24
+
+
+            ' ------------------------------------------------
+            ' ESCREVER INÍCIO / FIM
+            ' ------------------------------------------------
+
+            wsDados.Cells(linha, colInicio).Value = inicio
+            wsDados.Cells(linha, colInicio).NumberFormat = "dd/mm/yyyy hh:mm"
+
+            wsDados.Cells(linha, colFim).Value = fim
+            wsDados.Cells(linha, colFim).NumberFormat = "dd/mm/yyyy hh:mm"
+
+
+            ' ------------------------------------------------
+            ' STATUS
+            ' ------------------------------------------------
+
+            status = "PLANEJADO"
+
+            If fim < Now Then
+
+                status = "CONCLUÍDO"
+
+            ElseIf inicio <= Now _
+               And fim >= Now Then
+
+                status = "EM PRODUÇÃO"
+
+            End If
+
+
+            If colStatus > 0 Then
+
+                wsDados.Cells(linha, colStatus).Value = status
+
+            End If
+
+
+            ' ------------------------------------------------
+            ' GUARDAR ESTADO
+            ' ------------------------------------------------
+
+            maquinaAnterior = maquina
+            fimAnterior = fim
+
+
+        End If
+
+
+    Next linha
+
+
+SaidaNormal:
+
+    ' --------------------------------------------------------
+    ' RESTAURAR EXCEL
+    ' --------------------------------------------------------
+
+    On Error Resume Next
+
+    Application.Calculation = calcAnterior
+    Application.EnableEvents = eventosAnterior
+    Application.ScreenUpdating = telaAnterior
+    Application.StatusBar = statusBarAnterior
+
+    On Error GoTo 0
+
+    Exit Sub
+
+
+TrataErro:
+
+    MsgBox _
+        "Erro ao recalcular sequenciamento:" & vbCrLf & vbCrLf & _
+        "Procedimento: " & Err.Source & vbCrLf & _
+        "Erro: " & CStr(Err.Number) & vbCrLf & _
+        "Descrição: " & Err.Description, _
+        vbCritical, _
+        "APS PURAN - Erro"
+
+    Resume SaidaNormal
 
 End Sub
 

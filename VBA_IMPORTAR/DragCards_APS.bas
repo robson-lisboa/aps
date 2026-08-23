@@ -219,6 +219,9 @@ Public Sub AplicarPosicaoDosCards()
     AtualizarCardsDepoisDoDrag
 
 
+    ApagarCardsOrfaos
+
+
     sucesso = True
 
 

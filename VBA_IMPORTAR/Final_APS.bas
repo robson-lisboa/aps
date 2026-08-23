@@ -65,6 +65,13 @@ Public Sub IniciarSistemaAPS()
 
 
     ' --------------------------------------------------------
+    ' 3.6 SEQUENCIAMENTO
+    ' --------------------------------------------------------
+
+    RecalcularSequenciamentoAPS
+
+
+    ' --------------------------------------------------------
     ' 4. TIMELINE
     ' --------------------------------------------------------
 
@@ -78,6 +85,8 @@ Public Sub IniciarSistemaAPS()
     ApagarCardsAPS
 
     CriarCardsAPS
+
+    ApagarCardsOrfaos
 
 
     ' --------------------------------------------------------

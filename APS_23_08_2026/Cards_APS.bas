@@ -1,0 +1,1553 @@
+Option Explicit
+
+' ============================================================
+' MÓDULO 6 - CARDS FLUTUANTES APS
+' ============================================================
+'
+' CARACTERÍSTICAS
+'
+' • Cards são Shapes flutuantes.
+' • Não ficam presos às células.
+' • Posição horizontal = horário.
+' • Posição vertical = máquina.
+' • Largura = duração da OP.
+' • Atraso/Eventos já estão incorporados na Duração Total.
+' • Refeições não são criadas nem apagadas por este módulo.
+' • O Módulo 8 pode ler a posição do card e reprogramar a OP.
+'
+' ============================================================
+
+
+Private Const PREFIXO_CARD As String = "APS_CARD_"
+
+Private Const LINHA_HORAS As Long = 4
+Private Const PRIMEIRA_LINHA_MAQUINA As Long = 5
+
+Private Const ALTURA_CARD As Double = 58
+Private Const ESPACO_CARD As Double = 3
+Private Const LARGURA_MINIMA As Double = 55
+
+
+' ============================================================
+' CRIAR TODOS OS CARDS
+' ============================================================
+
+Public Sub CriarCardsAPS()
+
+    On Error GoTo TrataErro
+
+    Application.ScreenUpdating = False
+
+    PrepararPlanejamento
+
+    ApagarCardsAPS
+
+    CriarCardsDasOPs
+
+    AplicarVisualCards
+
+Saida:
+
+    Application.ScreenUpdating = True
+
+    Exit Sub
+
+
+TrataErro:
+
+    Application.ScreenUpdating = True
+
+    MsgBox _
+        "Erro ao criar os cards:" & vbCrLf & vbCrLf & _
+        Err.Description, _
+        vbCritical, _
+        "APS - Cards"
+
+End Sub
+
+
+' ============================================================
+' ATUALIZAR TODOS OS CARDS
+' ============================================================
+
+Public Sub AtualizarCardsAPS()
+
+    On Error GoTo TrataErro
+
+    Application.ScreenUpdating = False
+
+    AtualizarCardsExistentes
+
+Saida:
+
+    Application.ScreenUpdating = True
+
+    Exit Sub
+
+
+TrataErro:
+
+    Application.ScreenUpdating = True
+
+    MsgBox _
+        "Erro ao atualizar os cards:" & vbCrLf & vbCrLf & _
+        Err.Description, _
+        vbCritical, _
+        "APS - Cards"
+
+End Sub
+
+
+' ============================================================
+' APAGAR SOMENTE CARDS DAS OPs
+'
+' NÃO APAGA REFEIÇÃO.
+' ============================================================
+
+Public Sub ApagarCardsAPS()
+
+    Dim ws As Worksheet
+    Dim i As Long
+
+    Set ws = _
+        ThisWorkbook.Worksheets(ABA_PLANEJAMENTO)
+
+    For i = ws.Shapes.Count To 1 Step -1
+
+        If EhCardAPS(ws.Shapes(i)) Then
+
+            ws.Shapes(i).Delete
+
+        End If
+
+    Next i
+
+End Sub
+
+
+' ============================================================
+' REMOVER CARDS ÓRFÃOS
+' ============================================================
+
+Public Sub ApagarCardsOrfaos()
+
+    Dim wsPlan As Worksheet
+    Dim wsDados As Worksheet
+
+    Dim i As Long
+    Dim partes As Variant
+    Dim op As String
+
+    Dim linhaOP As Long
+
+
+    On Error Resume Next
+
+    Set wsPlan = _
+        ThisWorkbook.Worksheets( _
+            ABA_PLANEJAMENTO)
+
+    Set wsDados = _
+        ThisWorkbook.Worksheets( _
+            ABA_DADOS)
+
+    On Error GoTo 0
+
+    If wsPlan Is Nothing Then Exit Sub
+
+    If wsDados Is Nothing Then Exit Sub
+
+
+    For i = wsPlan.Shapes.Count To 1 Step -1
+
+
+        If EhCardAPS(wsPlan.Shapes(i)) Then
+
+
+            partes = _
+                Split( _
+                    wsPlan.Shapes(i).AlternativeText, _
+                    "|")
+
+
+            If UBound(partes) >= ALT_IDX_OP Then
+
+                op = _
+                    Trim$(CStr(partes(ALT_IDX_OP)))
+
+
+                If op <> "" Then
+
+
+                    linhaOP = _
+                        EncontrarLinhaOP( _
+                            wsDados, _
+                            op)
+
+
+                    If linhaOP = 0 Then
+
+
+                        wsPlan.Shapes(i).Delete
+
+
+                    End If
+
+                End If
+
+            End If
+
+        End If
+
+
+    Next i
+
+End Sub
+
+
+' ============================================================
+' VERIFICAR CARD
+' ============================================================
+
+Private Function EhCardAPS( _
+    ByVal shp As Shape) As Boolean
+
+    EhCardAPS = _
+        (Left$( _
+            shp.Name, _
+            Len(PREFIXO_CARD)) = PREFIXO_CARD)
+
+End Function
+
+
+' ============================================================
+' PREPARAR ABA PLANEJAMENTO
+'
+' NÃO ALTERA A ESTRUTURA DA PLANILHA.
+' Apenas garante os elementos básicos caso estejam vazios.
+' ============================================================
+
+Private Sub PrepararPlanejamento()
+
+    Dim ws As Worksheet
+
+    Set ws = _
+        ThisWorkbook.Worksheets( _
+            ABA_PLANEJAMENTO)
+
+    If Trim$(CStr(ws.Cells(1, 1).Value)) = "" Then
+        ws.Cells(1, 1).Value = "MÁQUINA"
+    End If
+
+    If Trim$(CStr(ws.Cells(2, 1).Value)) = "" Then
+        ws.Cells(2, 1).Value = "LINHA DO TEMPO"
+    End If
+
+    If Trim$(CStr(ws.Cells(3, 1).Value)) = "" Then
+        ws.Cells(3, 1).Value = "HORÁRIO"
+    End If
+
+    If Trim$(CStr(ws.Cells(4, 1).Value)) = "" Then
+        ws.Cells(4, 1).Value = "HORÁRIO"
+    End If
+
+End Sub
+
+
+' ============================================================
+' CRIAR CARDS DAS OPs
+' ============================================================
+
+Private Sub CriarCardsDasOPs()
+
+    Dim wsDados As Worksheet
+    Dim wsPlan As Worksheet
+
+    Dim colunaOP As Long
+    Dim ultimaLinha As Long
+    Dim linha As Long
+
+    Dim op As String
+    Dim maquina As String
+    Dim produto As String
+    Dim dosagem As String
+    Dim status As String
+
+    Dim inicio As Date
+    Dim fim As Date
+
+    Dim atraso As Double
+    Dim eventos As Double
+
+    Dim x As Double
+    Dim y As Double
+    Dim largura As Double
+
+    Dim shp As Shape
+
+
+    Set wsDados = _
+        ThisWorkbook.Worksheets(ABA_DADOS)
+
+    Set wsPlan = _
+        ThisWorkbook.Worksheets(ABA_PLANEJAMENTO)
+
+
+    colunaOP = _
+        EncontrarColuna(wsDados, "OP")
+
+    If colunaOP = 0 Then
+
+        MsgBox _
+            "A coluna 'OP' não foi encontrada na aba DADOS.", _
+            vbExclamation, _
+            "APS - Cards"
+
+        Exit Sub
+
+    End If
+
+
+    ultimaLinha = _
+        wsDados.Cells( _
+            wsDados.Rows.Count, _
+            colunaOP).End(xlUp).Row
+
+
+    For linha = 2 To ultimaLinha
+
+        op = ValorTexto(wsDados, linha, "OP")
+
+        If op <> "" Then
+
+            maquina = _
+                ValorTexto(wsDados, linha, "Máquina")
+
+            produto = _
+                ValorTexto(wsDados, linha, "Produto")
+
+            dosagem = _
+                ValorTexto(wsDados, linha, "Dosagem")
+
+            status = _
+                ValorTexto(wsDados, linha, "Status")
+
+            inicio = _
+                ValorData(wsDados, linha, "Início")
+
+            fim = _
+                ValorData(wsDados, linha, "Fim")
+
+            atraso = _
+                ValorNumero(wsDados, linha, "Atraso_h")
+
+            eventos = _
+                ValorNumero(wsDados, linha, "Eventos_h")
+
+
+            ' ------------------------------------------------
+            ' Eventos também fazem parte da duração.
+            ' ------------------------------------------------
+
+            If eventos > 0 Then
+                ' Apenas garante que a informação possa ser
+                ' utilizada futuramente na apresentação.
+            End If
+
+
+            If inicio > 0 _
+               And fim > inicio _
+               And maquina <> "" Then
+
+
+                ' --------------------------------------------
+                ' POSIÇÃO X
+                ' --------------------------------------------
+
+                x = _
+                    CalcularX( _
+                        wsPlan, _
+                        inicio)
+
+
+                ' --------------------------------------------
+                ' POSIÇÃO Y
+                ' --------------------------------------------
+
+                y = _
+                    CalcularY( _
+                        wsPlan, _
+                        maquina)
+
+
+                ' --------------------------------------------
+                ' LARGURA
+                ' --------------------------------------------
+
+                largura = _
+                    CalcularLargura( _
+                        wsPlan, _
+                        inicio, _
+                        fim)
+
+
+                If largura < LARGURA_MINIMA Then
+
+                    largura = LARGURA_MINIMA
+
+                End If
+
+
+                ' --------------------------------------------
+                ' CRIAR SHAPE
+                ' --------------------------------------------
+
+                Set shp = _
+                    wsPlan.Shapes.AddShape( _
+                        msoShapeRoundedRectangle, _
+                        x, _
+                        y, _
+                        largura, _
+                        ALTURA_CARD)
+
+
+                shp.Name = _
+                    GerarNomeCard(wsPlan, op)
+
+
+                ' --------------------------------------------
+                ' DADOS INTERNOS DO CARD
+                '
+                ' APS|OP|OP|MÁQUINA
+                ' --------------------------------------------
+
+                shp.AlternativeText = _
+                    "APS|OP|" & _
+                    op & "|" & _
+                    maquina
+
+
+                ' --------------------------------------------
+                ' TEXTO
+                ' --------------------------------------------
+
+                shp.TextFrame2.TextRange.Text = _
+                    MontarTextoCard( _
+                        op, _
+                        produto, _
+                        dosagem, _
+                        inicio, _
+                        fim, _
+                        status, _
+                        atraso, _
+                        eventos)
+
+
+                ' --------------------------------------------
+                ' VISUAL
+                ' --------------------------------------------
+
+                ConfigurarCard _
+                    shp, _
+                    status, _
+                    atraso
+
+
+                ' --------------------------------------------
+                ' FLUTUANTE
+                ' --------------------------------------------
+
+                shp.Placement = xlFreeFloating
+
+            End If
+
+        End If
+
+    Next linha
+
+End Sub
+
+
+' ============================================================
+' TEXTO DO CARD
+' ============================================================
+
+Private Function MontarTextoCard( _
+    ByVal op As String, _
+    ByVal produto As String, _
+    ByVal dosagem As String, _
+    ByVal inicio As Date, _
+    ByVal fim As Date, _
+    ByVal status As String, _
+    ByVal atraso As Double, _
+    ByVal eventos As Double) As String
+
+    Dim texto As String
+
+    texto = op
+
+
+    If produto <> "" Then
+
+        texto = _
+            texto & _
+            vbCrLf & _
+            produto
+
+    End If
+
+
+    If dosagem <> "" Then
+
+        texto = _
+            texto & _
+            " | " & _
+            dosagem
+
+    End If
+
+
+    texto = _
+        texto & _
+        vbCrLf & _
+        Format$(inicio, "hh:mm") & _
+        " → " & _
+        Format$(fim, "hh:mm")
+
+
+    If atraso > 0 Then
+
+        texto = _
+            texto & _
+            vbCrLf & _
+            "⚠ ATRASO +" & _
+            FormatarHoras(atraso)
+
+
+    ElseIf eventos > 0 Then
+
+        texto = _
+            texto & _
+            vbCrLf & _
+            "⚙ EVENTO +" & _
+            FormatarHoras(eventos)
+
+
+    ElseIf status <> "" Then
+
+        texto = _
+            texto & _
+            vbCrLf & _
+            status
+
+    End If
+
+
+    MontarTextoCard = texto
+
+End Function
+
+
+' ============================================================
+' CONFIGURAÇÃO VISUAL
+' ============================================================
+
+Private Sub ConfigurarCard( _
+    ByVal shp As Shape, _
+    ByVal status As String, _
+    ByVal atraso As Double)
+
+
+    ' --------------------------------------------------------
+    ' ATRASO
+    ' --------------------------------------------------------
+
+    If atraso > 0 Then
+
+        shp.Fill.ForeColor.RGB = RGB(198, 40, 40)
+
+        shp.Line.ForeColor.RGB = RGB(120, 0, 0)
+
+        shp.Line.Weight = 2
+
+
+    ' --------------------------------------------------------
+    ' EM PRODUÇÃO
+    ' --------------------------------------------------------
+
+    ElseIf UCase$(Trim$(status)) = _
+           "EM PRODUÇÃO" Then
+
+        shp.Fill.ForeColor.RGB = RGB(46, 125, 50)
+
+        shp.Line.ForeColor.RGB = RGB(27, 94, 32)
+
+        shp.Line.Weight = 2
+
+
+    ' --------------------------------------------------------
+    ' CONCLUÍDO
+    ' --------------------------------------------------------
+
+    ElseIf UCase$(Trim$(status)) = _
+           "CONCLUÍDO" Then
+
+        shp.Fill.ForeColor.RGB = RGB(117, 117, 117)
+
+        shp.Line.ForeColor.RGB = RGB(66, 66, 66)
+
+        shp.Line.Weight = 1
+
+
+    ' --------------------------------------------------------
+    ' PLANEJADO
+    ' --------------------------------------------------------
+
+    Else
+
+        shp.Fill.ForeColor.RGB = RGB(33, 150, 243)
+
+        shp.Line.ForeColor.RGB = RGB(13, 71, 161)
+
+        shp.Line.Weight = 1.25
+
+    End If
+
+
+    ' --------------------------------------------------------
+    ' TEXTO
+    ' --------------------------------------------------------
+
+    With shp.TextFrame2
+
+        .VerticalAnchor = msoAnchorMiddle
+
+        .TextRange.ParagraphFormat.Alignment = _
+            msoAlignCenter
+
+        .MarginLeft = 5
+        .MarginRight = 5
+        .MarginTop = 3
+        .MarginBottom = 3
+
+    End With
+
+
+    With shp.TextFrame2.TextRange.Font
+
+        .Size = 8
+
+        .Bold = msoTrue
+
+        .Fill.ForeColor.RGB = _
+            RGB(255, 255, 255)
+
+    End With
+
+End Sub
+
+
+' ============================================================
+' ATUALIZAR CARDS EXISTENTES
+' ============================================================
+
+Private Sub AtualizarCardsExistentes()
+
+    Dim ws As Worksheet
+    Dim i As Long
+
+    Dim partes As Variant
+    Dim op As String
+
+
+    Set ws = _
+        ThisWorkbook.Worksheets( _
+            ABA_PLANEJAMENTO)
+
+
+    For i = 1 To ws.Shapes.Count
+
+        If EhCardAPS(ws.Shapes(i)) Then
+
+            partes = _
+                Split( _
+                    ws.Shapes(i).AlternativeText, _
+                    "|")
+
+
+            If UBound(partes) >= 2 Then
+
+                op = _
+                    Trim$(CStr(partes(2)))
+
+
+                If op <> "" Then
+
+                    AtualizarCardOP op
+
+                End If
+
+            End If
+
+        End If
+
+    Next i
+
+End Sub
+
+
+' ============================================================
+' ATUALIZAR UMA OP
+' ============================================================
+
+Public Sub AtualizarCardOP( _
+    ByVal numeroOP As String)
+
+    Dim wsDados As Worksheet
+    Dim wsPlan As Worksheet
+
+    Dim linha As Long
+
+    Dim inicio As Date
+    Dim fim As Date
+
+    Dim maquina As String
+    Dim produto As String
+    Dim dosagem As String
+    Dim status As String
+
+    Dim atraso As Double
+    Dim eventos As Double
+
+    Dim shp As Shape
+
+    Dim x As Double
+    Dim y As Double
+    Dim largura As Double
+
+
+    Set wsDados = _
+        ThisWorkbook.Worksheets( _
+            ABA_DADOS)
+
+    Set wsPlan = _
+        ThisWorkbook.Worksheets( _
+            ABA_PLANEJAMENTO)
+
+
+    linha = _
+        EncontrarLinhaOP( _
+            wsDados, _
+            numeroOP)
+
+
+    If linha = 0 Then Exit Sub
+
+
+    inicio = _
+        ValorData( _
+            wsDados, _
+            linha, _
+            "Início")
+
+
+    fim = _
+        ValorData( _
+            wsDados, _
+            linha, _
+            "Fim")
+
+
+    maquina = _
+        ValorTexto( _
+            wsDados, _
+            linha, _
+            "Máquina")
+
+
+    produto = _
+        ValorTexto( _
+            wsDados, _
+            linha, _
+            "Produto")
+
+
+    dosagem = _
+        ValorTexto( _
+            wsDados, _
+            linha, _
+            "Dosagem")
+
+
+    status = _
+        ValorTexto( _
+            wsDados, _
+            linha, _
+            "Status")
+
+
+    atraso = _
+        ValorNumero( _
+            wsDados, _
+            linha, _
+            "Atraso_h")
+
+
+    eventos = _
+        ValorNumero( _
+            wsDados, _
+            linha, _
+            "Eventos_h")
+
+
+    If inicio <= 0 _
+       Or fim <= inicio _
+       Or maquina = "" Then Exit Sub
+
+
+    Set shp = _
+        EncontrarCard( _
+            wsPlan, _
+            numeroOP)
+
+
+    If shp Is Nothing Then Exit Sub
+
+
+    x = _
+        CalcularX( _
+            wsPlan, _
+            inicio)
+
+
+    y = _
+        CalcularY( _
+            wsPlan, _
+            maquina)
+
+
+    largura = _
+        CalcularLargura( _
+            wsPlan, _
+            inicio, _
+            fim)
+
+
+    If largura < LARGURA_MINIMA Then
+
+        largura = LARGURA_MINIMA
+
+    End If
+
+
+    shp.Left = x
+    shp.Top = y
+    shp.Width = largura
+    shp.Height = ALTURA_CARD
+
+
+    shp.TextFrame2.TextRange.Text = _
+        MontarTextoCard( _
+            numeroOP, _
+            produto, _
+            dosagem, _
+            inicio, _
+            fim, _
+            status, _
+            atraso, _
+            eventos)
+
+
+    ConfigurarCard _
+        shp, _
+        status, _
+        atraso
+
+
+    shp.Placement = xlFreeFloating
+
+End Sub
+
+
+' ============================================================
+' CALCULAR X
+'
+' Converte horário em posição horizontal.
+' ============================================================
+
+Private Function CalcularX( _
+    ByVal ws As Worksheet, _
+    ByVal horario As Date) As Double
+
+    Dim coluna As Long
+    Dim ultimaColuna As Long
+
+    Dim h1 As Date
+    Dim h2 As Date
+
+    Dim x1 As Double
+    Dim x2 As Double
+
+    Dim fracao As Double
+
+
+    ultimaColuna = _
+        UltimaColunaHorario(ws)
+
+
+    If ultimaColuna < 2 Then
+
+        CalcularX = ws.Cells( _
+            LINHA_HORAS, 2).Left
+
+        Exit Function
+
+    End If
+
+
+    ' --------------------------------------------------------
+    ' ANTES DO INÍCIO DA TIMELINE
+    ' --------------------------------------------------------
+
+    If IsDate(ws.Cells(LINHA_HORAS, 2).Value) Then
+
+        h1 = CDate(ws.Cells(LINHA_HORAS, 2).Value)
+
+        If horario <= h1 Then
+
+            CalcularX = _
+                ws.Cells( _
+                    LINHA_HORAS, 2).Left
+
+            Exit Function
+
+        End If
+
+    End If
+
+
+    ' --------------------------------------------------------
+    ' PROCURAR INTERVALO
+    ' --------------------------------------------------------
+
+    For coluna = 2 To ultimaColuna - 1
+
+        If IsDate( _
+            ws.Cells( _
+                LINHA_HORAS, _
+                coluna).Value) _
+           And _
+           IsDate( _
+            ws.Cells( _
+                LINHA_HORAS, _
+                coluna + 1).Value) Then
+
+
+            h1 = _
+                CDate( _
+                    ws.Cells( _
+                        LINHA_HORAS, _
+                        coluna).Value)
+
+
+            h2 = _
+                CDate( _
+                    ws.Cells( _
+                        LINHA_HORAS, _
+                        coluna + 1).Value)
+
+
+            x1 = _
+                ws.Cells( _
+                    LINHA_HORAS, _
+                    coluna).Left
+
+
+            x2 = _
+                ws.Cells( _
+                    LINHA_HORAS, _
+                    coluna + 1).Left
+
+
+            If h2 > h1 Then
+
+                If horario >= h1 _
+                   And horario < h2 Then
+
+
+                    fracao = _
+                        (horario - h1) / _
+                        (h2 - h1)
+
+
+                    CalcularX = _
+                        x1 + _
+                        (x2 - x1) * fracao
+
+
+                    Exit Function
+
+                End If
+
+            End If
+
+        End If
+
+    Next coluna
+
+
+    ' --------------------------------------------------------
+    ' DEPOIS DO FIM DA TIMELINE
+    ' --------------------------------------------------------
+
+    CalcularX = _
+        ws.Cells( _
+            LINHA_HORAS, _
+            ultimaColuna).Left
+
+End Function
+
+
+' ============================================================
+' CALCULAR Y
+' ============================================================
+
+Private Function CalcularY( _
+    ByVal ws As Worksheet, _
+    ByVal maquina As String) As Double
+
+    Dim linha As Long
+
+
+    linha = _
+        EncontrarLinhaMaquina( _
+            ws, _
+            maquina)
+
+
+    If linha = 0 Then
+
+        linha = PRIMEIRA_LINHA_MAQUINA
+
+    End If
+
+
+    CalcularY = _
+        ws.Rows(linha).Top + _
+        ESPACO_CARD
+
+End Function
+
+
+' ============================================================
+' CALCULAR LARGURA
+'
+' A largura é exatamente a distância entre:
+'
+'     X(início)
+'     X(fim)
+'
+' ============================================================
+
+Private Function CalcularLargura( _
+    ByVal ws As Worksheet, _
+    ByVal inicio As Date, _
+    ByVal fim As Date) As Double
+
+    Dim x1 As Double
+    Dim x2 As Double
+
+
+    If fim <= inicio Then
+
+        CalcularLargura = LARGURA_MINIMA
+
+        Exit Function
+
+    End If
+
+
+    x1 = _
+        CalcularX( _
+            ws, _
+            inicio)
+
+
+    x2 = _
+        CalcularX( _
+            ws, _
+            fim)
+
+
+    If x2 <= x1 Then
+
+        CalcularLargura = LARGURA_MINIMA
+
+    Else
+
+        CalcularLargura = x2 - x1
+
+    End If
+
+End Function
+
+
+' ============================================================
+' ÚLTIMA COLUNA DA TIMELINE
+' ============================================================
+
+Private Function UltimaColunaHorario( _
+    ByVal ws As Worksheet) As Long
+
+    UltimaColunaHorario = _
+        ws.Cells( _
+            LINHA_HORAS, _
+            ws.Columns.Count).End(xlToLeft).Column
+
+
+    If UltimaColunaHorario < 2 Then
+
+        UltimaColunaHorario = 2
+
+    End If
+
+End Function
+
+
+' ============================================================
+' ENCONTRAR LINHA DA MÁQUINA
+' ============================================================
+
+Private Function EncontrarLinhaMaquina( _
+    ByVal ws As Worksheet, _
+    ByVal maquina As String) As Long
+
+    Dim linha As Long
+    Dim ultimaLinha As Long
+
+
+    ultimaLinha = _
+        ws.Cells( _
+            ws.Rows.Count, _
+            1).End(xlUp).Row
+
+
+    For linha = _
+        PRIMEIRA_LINHA_MAQUINA To ultimaLinha
+
+
+        If StrComp( _
+            Trim$(CStr( _
+                ws.Cells(linha, 1).Value)), _
+            Trim$(maquina), _
+            vbTextCompare) = 0 Then
+
+
+            EncontrarLinhaMaquina = linha
+
+            Exit Function
+
+        End If
+
+    Next linha
+
+End Function
+
+
+' ============================================================
+' ENCONTRAR CARD
+' ============================================================
+
+Private Function EncontrarCard( _
+    ByVal ws As Worksheet, _
+    ByVal numeroOP As String) As Shape
+
+    Dim i As Long
+    Dim partes As Variant
+
+
+    For i = 1 To ws.Shapes.Count
+
+        If EhCardAPS(ws.Shapes(i)) Then
+
+            partes = _
+                Split( _
+                    ws.Shapes(i).AlternativeText, _
+                    "|")
+
+
+            If UBound(partes) >= 2 Then
+
+                If StrComp( _
+                    Trim$(CStr(partes(2))), _
+                    Trim$(numeroOP), _
+                    vbTextCompare) = 0 Then
+
+
+                    Set EncontrarCard = _
+                        ws.Shapes(i)
+
+                    Exit Function
+
+                End If
+
+            End If
+
+        End If
+
+    Next i
+
+End Function
+
+
+' ============================================================
+' ENCONTRAR LINHA DA OP
+' ============================================================
+
+Private Function EncontrarLinhaOP( _
+    ByVal ws As Worksheet, _
+    ByVal numeroOP As String) As Long
+
+    Dim coluna As Long
+    Dim linha As Long
+    Dim ultimaLinha As Long
+
+
+    coluna = _
+        EncontrarColuna( _
+            ws, _
+            "OP")
+
+
+    If coluna = 0 Then Exit Function
+
+
+    ultimaLinha = _
+        ws.Cells( _
+            ws.Rows.Count, _
+            coluna).End(xlUp).Row
+
+
+    For linha = 2 To ultimaLinha
+
+        If StrComp( _
+            Trim$(CStr( _
+                ws.Cells(linha, coluna).Value)), _
+            Trim$(numeroOP), _
+            vbTextCompare) = 0 Then
+
+
+            EncontrarLinhaOP = linha
+
+            Exit Function
+
+        End If
+
+    Next linha
+
+End Function
+
+
+' ============================================================
+' ENCONTRAR COLUNA
+' ============================================================
+
+Private Function EncontrarColuna( _
+    ByVal ws As Worksheet, _
+    ByVal nome As String) As Long
+
+    Dim coluna As Long
+    Dim ultimaColuna As Long
+
+
+    ultimaColuna = _
+        ws.Cells( _
+            1, _
+            ws.Columns.Count).End(xlToLeft).Column
+
+
+    For coluna = 1 To ultimaColuna
+
+        If StrComp( _
+            Trim$(CStr( _
+                ws.Cells(1, coluna).Value)), _
+            Trim$(nome), _
+            vbTextCompare) = 0 Then
+
+
+            EncontrarColuna = coluna
+
+            Exit Function
+
+        End If
+
+    Next coluna
+
+End Function
+
+
+' ============================================================
+' TEXTO
+' ============================================================
+
+Private Function ValorTexto( _
+    ByVal ws As Worksheet, _
+    ByVal linha As Long, _
+    ByVal campo As String) As String
+
+    Dim coluna As Long
+
+
+    coluna = _
+        EncontrarColuna( _
+            ws, _
+            campo)
+
+
+    If coluna > 0 Then
+
+        If Not IsError(ws.Cells(linha, coluna).Value) Then
+
+            ValorTexto = _
+                Trim$(CStr( _
+                    ws.Cells(linha, coluna).Value))
+
+        End If
+
+    End If
+
+End Function
+
+
+' ============================================================
+' DATA
+' ============================================================
+
+Private Function ValorData( _
+    ByVal ws As Worksheet, _
+    ByVal linha As Long, _
+    ByVal campo As String) As Date
+
+    Dim coluna As Long
+
+
+    coluna = _
+        EncontrarColuna( _
+            ws, _
+            campo)
+
+
+    If coluna > 0 Then
+
+        If IsDate( _
+            ws.Cells(linha, coluna).Value) Then
+
+            ValorData = _
+                CDate( _
+                    ws.Cells(linha, coluna).Value)
+
+        End If
+
+    End If
+
+End Function
+
+
+' ============================================================
+' NÚMERO
+' ============================================================
+
+Private Function ValorNumero( _
+    ByVal ws As Worksheet, _
+    ByVal linha As Long, _
+    ByVal campo As String) As Double
+
+    Dim coluna As Long
+
+
+    coluna = _
+        EncontrarColuna( _
+            ws, _
+            campo)
+
+
+    If coluna > 0 Then
+
+        If IsNumeric( _
+            ws.Cells(linha, coluna).Value) Then
+
+            ValorNumero = _
+                CDbl( _
+                    ws.Cells(linha, coluna).Value)
+
+        End If
+
+    End If
+
+End Function
+
+
+' ============================================================
+' FORMATAR HORAS
+' ============================================================
+
+Private Function FormatarHoras( _
+    ByVal horas As Double) As String
+
+    Dim totalMinutos As Long
+    Dim h As Long
+    Dim m As Long
+
+
+    totalMinutos = _
+        Round(horas * 60, 0)
+
+
+    If totalMinutos < 0 Then
+
+        totalMinutos = 0
+
+    End If
+
+
+    h = totalMinutos \ 60
+
+    m = totalMinutos Mod 60
+
+
+    FormatarHoras = _
+        Format$(h, "00") & ":" & _
+        Format$(m, "00")
+
+End Function
+
+
+' ============================================================
+' GERAR NOME ÚNICO DO CARD
+' ============================================================
+
+Private Function GerarNomeCard( _
+    ByVal ws As Worksheet, _
+    ByVal op As String) As String
+
+    Dim base As String
+    Dim nome As String
+    Dim contador As Long
+
+
+    base = _
+        PREFIXO_CARD & _
+        LimparNome(op)
+
+
+    nome = base
+
+    contador = 1
+
+
+    Do While ShapeExiste(ws, nome)
+
+        contador = contador + 1
+
+        nome = _
+            base & "_" & _
+            CStr(contador)
+
+    Loop
+
+
+    GerarNomeCard = nome
+
+End Function
+
+
+' ============================================================
+' VERIFICAR SE SHAPE EXISTE
+' ============================================================
+
+Private Function ShapeExiste( _
+    ByVal ws As Worksheet, _
+    ByVal nome As String) As Boolean
+
+    Dim shp As Shape
+
+
+    On Error Resume Next
+
+    Set shp = ws.Shapes(nome)
+
+    On Error GoTo 0
+
+
+    ShapeExiste = Not shp Is Nothing
+
+End Function
+
+
+' ============================================================
+' LIMPAR NOME DO SHAPE
+' ============================================================
+
+Private Function LimparNome( _
+    ByVal texto As String) As String
+
+    Dim resultado As String
+
+
+    resultado = Trim$(texto)
+
+
+    resultado = Replace(resultado, "/", "_")
+    resultado = Replace(resultado, "\", "_")
+    resultado = Replace(resultado, ":", "_")
+    resultado = Replace(resultado, "*", "_")
+    resultado = Replace(resultado, "?", "_")
+    resultado = Replace(resultado, "[", "_")
+    resultado = Replace(resultado, "]", "_")
+    resultado = Replace(resultado, "|", "_")
+
+
+    If resultado = "" Then
+
+        resultado = "SEM_OP"
+
+    End If
+
+
+    LimparNome = resultado
+
+End Function
+
+
+' ============================================================
+' APLICAR VISUAL
+' ============================================================
+
+Private Sub AplicarVisualCards()
+
+    Dim ws As Worksheet
+    Dim i As Long
+
+
+    Set ws = _
+        ThisWorkbook.Worksheets( _
+            ABA_PLANEJAMENTO)
+
+
+    For i = 1 To ws.Shapes.Count
+
+        If EhCardAPS(ws.Shapes(i)) Then
+
+            ws.Shapes(i).Placement = _
+                xlFreeFloating
+
+        End If
+
+    Next i
+
+End Sub
+
+
+' ============================================================
+' FIM DO MÓDULO 6
+' ============================================================
